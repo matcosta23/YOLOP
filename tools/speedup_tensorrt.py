@@ -180,7 +180,7 @@ def main():
         logger.info(msg)
 
     ### Speed UP Model with TensorRT.
-
+    print("\n----- BEGIN TO SPEED UP MODEL -----")
     input_shape = [valid_loader.batch_size, 3, *valid_loader.dataset.inputsize]
 
     # NOTE: The following lines only work in environments with GPU.
@@ -188,6 +188,7 @@ def main():
     # TODO: Check if the batchsize should receive the total or per GPU.
     engine = ModelSpeedupTensorRT(model, input_shape, config=configure_list, calib_data_loader=valid_loader, batchsize=valid_loader.batch_size)
     engine.compress()
+    print("----- SPEED UP FINISHED -----\n")
 
     ### Evaluate the model after quantization simulation.
     print("\n----- EVALUATION OF MODEL SPEEDED UP WITH TENSOR RT -----")
