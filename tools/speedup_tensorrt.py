@@ -15,6 +15,7 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import numpy as np
 from lib.utils import DataLoaderX
+from torch.utils.data.dataloader import DataLoader
 from tensorboardX import SummaryWriter
 
 import lib.dataset as dataset
@@ -137,6 +138,8 @@ def main():
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
 
+    ### Define dataloaders.
+
     valid_dataset = eval('dataset.' + cfg.DATASET.DATASET)(
         cfg=cfg,
         is_train=False,
@@ -155,6 +158,18 @@ def main():
         pin_memory=False,
         collate_fn=dataset.AutoDriveDataset.collate_fn
     )
+
+    # Default PyTorch Dataloader
+
+    valid_dataloader = DataLoader(
+        valid_dataset,
+        batch_size=cfg.TEST.BATCH_SIZE_PER_GPU * len(cfg.GPUS),
+        shuffle=False,
+        num_workers=cfg.WORKERS,
+        pin_memory=False,
+        collate_fn=dataset.AutoDriveDataset.collate_fn
+    )
+
     print("----- DATA LOAD COMPLETE -----\n")
 
     ### Evaluate the original model if flag is set.
@@ -186,7 +201,7 @@ def main():
     # NOTE: The following lines only work in environments with GPU.
     # TODO: Verify if a 'DataLoaderX' type is accepted in the calib_data_loader.
     # TODO: Check if the batchsize should receive the total or per GPU.
-    engine = ModelSpeedupTensorRT(model, input_shape, config=configure_list, calib_data_loader=valid_loader, batchsize=valid_loader.batch_size)
+    engine = ModelSpeedupTensorRT(model, input_shape, config=configure_list, calib_data_loader=valid_dataloader, batchsize=valid_loader.batch_size)
     engine.compress()
     print("----- SPEED UP FINISHED -----\n")
 
@@ -221,7 +236,7 @@ def main():
 
     # TODO : Inclusion exportation process.
 
-    # Process done for Observers Quantizers.
+    # # Process done for Observers Quantizers.
     # os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
     # model_path = os.path.join(cfg.OUTPUT_DIR, "quantized_yolop.pth")
     # calibration_path = os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.DATASET + '_calib.json')
